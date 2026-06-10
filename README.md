@@ -37,6 +37,14 @@ with torch.no_grad():
     upscaled = model(latent, target_size)     # -> (1, 4, 192, 192)
 ```
 
+### ComfyUI installation
+```
+cd ComfyUI/custom_nodes
+git clone https://github.com/LoganBooker/SesquiLSR.git
+```
+
+The node is accessible under `latent/upscaling/Upscale Latent (SesquiLSR)`. The node handles latent upscaling and format conversion internally.
+
 ## Format adaptors
 
 Some pipelines transform the VAE output before passing it to the diffusion model. An adaptor converts between the pipeline's latent format and the raw VAE latent space that Sesqui operates on. They require no arguments - just pick the one matching your model:
@@ -121,17 +129,7 @@ A modified version of Meta's Schedule-Free AdamW is used as an optimizer.
 
 Total training time and steps varies from model to model; the shortest being 50 minutes (one stage, 25k steps), and the longest 6 hours, 30 minutes (three stages, ~155k steps). All models were trained on a single 5090 laptop GPU.
 
-## ComfyUI
-
-### Installation
-```
-cd ComfyUI/custom_nodes
-git clone https://github.com/LoganBooker/SesquiLSR.git
-```
-
-The **Upscale Latent (SesquiLSR)** node handles latent upscaling and format conversion internally.
-
-### Parameters
+## ComfyUI node parameters
 
 - **model_format**: The model family / VAE type. **Must match the incoming latent.**
   - `SDXL`: 4-channel latents.
