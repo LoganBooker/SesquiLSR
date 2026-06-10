@@ -27,4 +27,8 @@ Thumbs.db
 # Temp artifacts
 *.tmp
 *.log
-benchmark
+benchmark/**
+!benchmark/images
+!benchmark/images/flux2_quality_2.0x.png
+!benchmark/images/sdxl_competitors_cat_2.0x.png
+!benchmark/images/sdxl_competitors_bug_2.0x.png
