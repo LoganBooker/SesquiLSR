@@ -2,6 +2,14 @@
 
 Latent upscaler supporting arbitrary scales between 1.0-2.0x for various models/VAEs. The name comes from *sesqui*- (Latin for "one and a half"); the original model was a fixed 1.5x upscale using rational resampling. The current architecture uses the same principle: PixelShuffle to 2x then learned downsampling to the target size. I kept the name as it remained relevant (at least in spirit).
 
+## Features
+
+- **Multi-model support** - SDXL, Flux/Z-Image Turbo, Flux2/Klein, and Wan 2.1/Qwen/Anima from a single architecture
+- **Arbitrary scale** in [1.0x, 2.0x] - not limited to fixed 2x
+- **~3M parameters, ~12MB weights** across all variants
+- **Sub-6ms inference** in latent space, with no VAE round-trip
+- **ComfyUI node included** - drop-in, no model or VAE connection required
+
 ## Use case
 
 Sesqui is not meant to replace full-blown GAN-based upscaling pipelines. Instead, it should be used in place of "raw" latent upscaling via bilinear or bicubic in preparation for additional denoising. 
@@ -9,6 +17,8 @@ Sesqui is not meant to replace full-blown GAN-based upscaling pipelines. Instead
 Naive interpolation damages the latent, so the output image requires high denoising strength (>= 0.5) to recover. A learned upscaler like Sesqui produces cleaner latents that need less refinement in the second pass.
 
 ## Supported models with pretrained weights
+
+All weights can be found in the `models/` folder of this repository.
 
 | Family | VAE | Latent channels | Weight file |
 |---|---|---|---|
