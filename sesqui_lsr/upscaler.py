@@ -174,7 +174,7 @@ class LowRankReassemblyHead(nn.Module):
         cond = cond.to(dtype=self.base_taps.dtype)
 
         residuals = self.filter_net(cond).view(R, n_axis, self.channels, self.K)
-        residuals = 0.2 * torch.tanh(residuals)  # Again, bound the residual other kaboom...
+        residuals = 0.2 * torch.tanh(residuals)  # Again, bound the residual otherwise kaboom...
 
         residuals = residuals - residuals.mean(dim=-1, keepdim=True)
 
@@ -233,7 +233,7 @@ class LowRankReassemblyHead(nn.Module):
         return out
 
 
-# Some models/VAE can get away with very little in terms of trunks. For example, the Qwen/Wan21 VAE
+# Some models/VAEs can get away with very little in terms of trunks. For example, the Qwen/Wan21 VAE
 # was completely happy with 2/4 instead of 8/6. However, to keep the arch consistent, we use the same
 # structure for all upscalers.
 class LatentUpscaler(nn.Module):
@@ -253,7 +253,7 @@ class LatentUpscaler(nn.Module):
             Activation(),
             nn.Conv2d(width // 2, width, 3, padding=1, padding_mode="reflect", bias=True),
         )
-
+        # No difference with a slight bottleneck here and smaller expand, saves a few parameters.
         self.in_blocks = nn.Sequential(*[
             GatedWDSR(width, expand_ratio=in_expand, shrink_ratio=0.75, values_per_gate=8)
             for _ in range(in_depth)
@@ -262,7 +262,7 @@ class LatentUpscaler(nn.Module):
 
         # Traditional SR says do most of the work at LR, then upscale and output. The problem is
         # latents are delicate structures where no amount of front-loaded work can make up for the
-        # damage introduced by upscaling. Post-corrrection is a must, and all variants tested without
+        # damage introduced by upscaling. Post-correction is a must, and all variants tested without
         # post-correction were much worse.
         self.out_blocks = nn.Sequential(*[
             GatedWDSR(width, expand_ratio=out_expand, shrink_ratio=1.0, values_per_gate=8)
@@ -273,7 +273,7 @@ class LatentUpscaler(nn.Module):
             Activation(),
             nn.Conv2d(width // 2, in_channels, 3, padding=1, padding_mode="reflect", bias=True),
         )
-        # Give the model away to do light correction on the skip so the trunk/head can focus on
+        # Give the model a way to do light correction on the skip so the trunk/head can focus on
         # detail/damage control.
         self.skip_conv = nn.Conv2d(in_channels, in_channels, 5, padding=2, padding_mode="reflect", bias=False)
         nn.init.dirac_(self.skip_conv.weight)
