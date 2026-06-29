@@ -12,7 +12,7 @@ _node_dir = Path(__file__).resolve().parent
 if str(_node_dir) not in sys.path:
     sys.path.insert(0, str(_node_dir))
 
-from sesqui_lsr import LatentUpscaler, make_flux2, make_identity
+from sesqui_lsr import LatentUpscaler, make_flux2, make_identity, make_ideogram4
 from sesqui_lsr.inference_adaptors import LatentFormatAdaptor
 
 # ── Model / adaptor registry ────────────────────────────────────────────
@@ -33,10 +33,16 @@ _FORMAT_CFG: dict[str, dict] = {
         "in_channels": 32,
         "adaptor_fn": lambda: make_flux2(),
     },
+    "Ideogram 4": {
+        # Same 32ch VAE as Flux2; pipeline uses shift/scale patchify.
+        "model_file": "upscaler_Flux2.safetensors",
+        "in_channels": 32,
+        "adaptor_fn": lambda: make_ideogram4(),
+    },
     "Wan 2.1": {
         "model_file": "upscaler_Wan21.safetensors",
         "in_channels": 16,
-        # ComfyUI LATENT nodes receive Wan/Qwen/Anima latents after
+        # ComfyUI LATENT nodes receive Wan/Qwen/Anima/Krea latents after
         # latent_format.process_out(...), so they are already back in raw
         # VAE latent space.
         "adaptor_fn": lambda: make_identity(16),
@@ -179,8 +185,18 @@ class SesquiLatentUpscale:
             "required": {
                 "latent": ("LATENT",),
                 "model_format": (
-                    ["SDXL", "Flux", "Flux2", "Wan 2.1"],
-                    {"default": "SDXL"},
+                    ["SDXL", "Flux", "Flux2", "Ideogram 4", "Wan 2.1"],
+                    {
+                        "default": "SDXL",
+                        "tooltip": (
+                            "VAE latent configuration:\n"
+                            "• SDXL (not compatible with SD 1.5)\n"
+                            "• Flux (Flux, Z-Image Turbo, Lumina)\n"
+                            "• Flux2 (Flux2, BN-packed latent)\n"
+                            "• Ideogram 4 (Flux2, shift/scale-packed latent)\n"
+                            "• Wan 2.1 (Wan 2.x, Krea 2, Anima, Qwen Image)"
+                        ),
+                    },
                 ),
                 "scale": (
                     "FLOAT",
@@ -248,9 +264,8 @@ class SesquiLatentUpscale:
         except Exception as e:
             raise ValueError(
                 f"SesquiLSR [{model_format}]: {e}  "
-                f"(SDXL=4ch, Flux/Wan 2.1=16ch, Flux2=128ch packed)"
+                f"(SDXL=4ch, Flux/Wan/Krea=16ch, Flux2/Ideogram4=128ch packed)"
             ) from e
-
 
 # ── Registration ─────────────────────────────────────────────────────────
 
