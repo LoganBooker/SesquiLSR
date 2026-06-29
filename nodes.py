@@ -192,8 +192,8 @@ class SesquiLatentUpscale:
                             "VAE latent configuration:\n"
                             "• SDXL (not compatible with SD 1.5)\n"
                             "• Flux (Flux, Z-Image Turbo, Lumina)\n"
-                            "• Flux2 (Flux2, BN-packed latent)\n"
-                            "• Ideogram 4 (Flux2, shift/scale-packed latent)\n"
+                            "• Flux2 (Flux2, Flux2 Klein: BN-packed latent)\n"
+                            "• Ideogram 4 (Flux2: shift/scale-packed latent)\n"
                             "• Wan 2.1 (Wan 2.x, Krea 2, Anima, Qwen Image)"
                         ),
                     },

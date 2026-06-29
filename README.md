@@ -4,7 +4,7 @@ Latent upscaler supporting arbitrary scales between 1.0-2.0x for various models/
 
 ## Features
 
-- **Multi-model support** - SDXL, Flux/Z-Image Turbo, Flux2/Klein, and Wan 2.1/Qwen/Anima from a single architecture
+- **Multi-model support** - SDXL, Flux, Z-Image Turbo, Flux2 Klein, Krea 2, Wan 2.1, Qwen Image and Anima from a single architecture
 - **Arbitrary scale** in [1.0x, 2.0x] - not limited to fixed 2x
 - **~3M parameters, ~12MB weights** across all variants
 - **Sub-6ms inference** in latent space, with no VAE round-trip
@@ -20,12 +20,12 @@ Naive interpolation damages the latent, so the output image requires high denois
 
 All weights can be found in the `models/` folder of this repository.
 
-| Family | VAE | Latent channels | Weight file |
-|---|---|---|---|
-| SDXL | SDXL VAE | 4 | `upscaler_SDXL.safetensors` |
-| Flux / Flux Schnell / Lumina 2 / Z-Image | Flux VAE | 16 | `upscaler_Flux.safetensors` |
-| Flux2 | Flux2 VAE | 32 | `upscaler_Flux2.safetensors` |
-| Wan 2.x / Qwen Image / Anima | Wan-VAE | 16 | `upscaler_Wan21.safetensors` |
+| VAE | Models | Weight file |
+|---|---|---|
+| SDXL | SDXL | `upscaler_SDXL.safetensors` |
+| Flux | Flux, Z-Image Turbo, Lumina | `upscaler_Flux.safetensors` |
+| Flux2 | Flux2, Flux2 Klein, Ideogram 4 | `upscaler_Flux2.safetensors` |
+| Wan | Wan 2.x, Krea 2, Anima, Qwen Image | `upscaler_Wan21.safetensors` |
 
 Each model is trained on VAE latents directly. The format adaptors handle any pipeline-level transforms (such as patchification/batch norm) so the upscaler always operates in clean VAE latent space. We do this so the upscalers don't need retraining when a new model is released that uses an existing VAE, it just needs a new adaptor (and sometimes not even that).
 
