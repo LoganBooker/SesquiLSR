@@ -88,10 +88,10 @@ Each test image is Lanczos-downsampled to the low-resolution size, encoded to a 
 
 | Model | Sesqui LPIPS ↓ | Bicubic LPIPS ↓ | Improvement |
 |---|---:|---:|---:|
-| SDXL | 0.1485 | 0.4677 | 68% lower |
-| Flux | 0.1138 | 0.3392 | 66% lower |
-| Flux2 | 0.0807 | 0.1997 | 60% lower |
-| Wan 2.1 | 0.1058 | 0.2155 | 51% lower |
+| SDXL | 0.1249 | 0.4484 | 72% lower |
+| Flux | 0.0974 | 0.2915 | 67% lower |
+| Flux2 | 0.0587 | 0.1732 | 66% lower |
+| Wan 2.1 | 0.0919 | 0.1909 | 52% lower |
 
 ### SDXL comparison with other latent upscalers
 
@@ -123,7 +123,7 @@ Sesqui is capable of substantially cleaner output than the SDXL comparison table
 
 ![Flux2 quality comparison 2.0x](benchmark/images/flux2_quality_2.0x.png)
 
-Again, Sesqui favours perceptual detail (texture) over strict pixel accuracy (structure), hence the weaker reconstruction of the fine grid in the building image, but excellent results in the other three crops.
+At 2.0×, Sesqui scores LPIPS 0.1031 versus 0.2817 for bicubic latent upscaling (63% lower). Again, Sesqui favours perceptual detail (texture) over strict pixel accuracy (structure), hence the weaker reconstruction of the fine grid in the building image, but excellent results in the other three crops.
 
 ## Training
 
@@ -141,10 +141,11 @@ Total training time and steps varies from model to model; the shortest being 50 
 
 ## ComfyUI node parameters
 
-- **model_format**: The model family / VAE type. **Must match the incoming latent.**
-  - `SDXL`: 4-channel latents.
-  - `Flux`: 16-channel latents (covers Flux, Lumina 2, Z-Image).
-  - `Flux2`: 128-channel packed latents.
-  - `Wan 2.1`: 16-channel latents (covers Wan 2.x, Anima, Qwen Image).
-- **scale**: Target scale factor between [1.0, 2.0].
+- **model_format**: The VAE latent configuration. **Must match the incoming latent.**
+  - `SDXL`: SDXL only; not compatible with SD 1.5.
+  - `Flux`: Flux, Z-Image Turbo, Lumina.
+  - `Flux2`: Flux2, Flux2 Klein; BN-packed latent.
+  - `Ideogram 4`: Flux2 VAE; shift/scale-packed latent.
+  - `Wan 2.1`: Wan 2.x, Krea 2, Anima, Qwen Image.
+- **scale**: Target scale factor between [1.0, 2.0]. Default `1.5`, step `0.05`.
 - **half_precision**: Default `on`. Loads the upscaler model in bf16 (fp16 if unsupported). Half-precision has no effect on quality and should be left on, however the setting is available for debugging purposes.
