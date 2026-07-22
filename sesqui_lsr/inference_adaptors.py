@@ -80,12 +80,33 @@ class LatentFormatAdaptor:
 
 
 def make_identity(external_channels: int) -> LatentFormatAdaptor:
-    """Adaptor for formats where the external latent IS the VAE latent.
+    """Adaptor for formats where the external latent IS the model latent.
 
-    SDXL, Flux1, SD15, Z-Image Turbo, and any other model where the pipeline
-    does not further transform the VAE output.
+    Wan 2.1, Anima, Qwen Image, Krea 2, and any other model where ComfyUI's
+    latent_format does not apply a scaling transform (process_in/out are
+    identity or cancel out before reaching custom LATENT nodes).
     """
     return LatentFormatAdaptor(external_channels=external_channels)
+
+
+def make_sdxl() -> LatentFormatAdaptor:
+    """SDXL - 4ch VAE latent with 0.13025 scaling.
+
+    ComfyUI stores raw VAE latents between nodes; KSampler applies
+    process_in (x0.13025) / process_out (/0.13025) around the model.
+    Sesqui was trained on the scaled latents.
+    """
+    return _AffineAdaptor(external_channels=4, scale=0.13025, shift=0.0)
+
+
+def make_flux() -> LatentFormatAdaptor:
+    """Flux / Z-Image Turbo / Lumina - 16ch VAE latent with shift/scale.
+
+    ComfyUI stores raw VAE latents between nodes; KSampler applies
+    process_in ((z - 0.1159) x 0.3611) / process_out (z / 0.3611 + 0.1159).
+    Sesqui was trained on the scaled latents.
+    """
+    return _AffineAdaptor(external_channels=16, scale=0.3611, shift=0.1159)
 
 
 def make_flux2(
@@ -228,6 +249,25 @@ def make_wan21(
 
 
 # ── Internal implementations ──────────────────────────────────────────────
+
+
+class _AffineAdaptor(LatentFormatAdaptor):
+    """Affine transform: (z - shift) * scale and inverse.
+
+    Used by SDXL and Flux where ComfyUI stores raw VAE latents between nodes
+    but the diffusion model (and Sesqui) operates on scaled latents.
+    """
+
+    def __init__(self, external_channels: int, scale: float, shift: float):
+        super().__init__(external_channels=external_channels)
+        self.scale = scale
+        self.shift = shift
+
+    def to_vae_latent(self, z: Tensor) -> Tensor:
+        return (z.float() - self.shift) * self.scale
+
+    def from_vae_latent(self, z: Tensor) -> Tensor:
+        return z.float() / self.scale + self.shift
 
 
 class _ZScoreAdaptor(LatentFormatAdaptor):

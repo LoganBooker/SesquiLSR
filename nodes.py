@@ -12,7 +12,7 @@ _node_dir = Path(__file__).resolve().parent
 if str(_node_dir) not in sys.path:
     sys.path.insert(0, str(_node_dir))
 
-from sesqui_lsr import LatentUpscaler, make_flux2, make_identity, make_ideogram4
+from sesqui_lsr import LatentUpscaler, make_flux, make_flux2, make_identity, make_ideogram4, make_sdxl
 from sesqui_lsr.inference_adaptors import LatentFormatAdaptor
 
 # ── Model / adaptor registry ────────────────────────────────────────────
@@ -21,12 +21,12 @@ _FORMAT_CFG: dict[str, dict] = {
     "SDXL": {
         "model_file": "upscaler_SDXL.safetensors",
         "in_channels": 4,
-        "adaptor_fn": lambda: make_identity(4),
+        "adaptor_fn": lambda: make_sdxl(),
     },
     "Flux": {
         "model_file": "upscaler_Flux.safetensors",
         "in_channels": 16,
-        "adaptor_fn": lambda: make_identity(16),
+        "adaptor_fn": lambda: make_flux(),
     },
     "Flux2": {
         "model_file": "upscaler_Flux2.safetensors",
