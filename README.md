@@ -60,9 +60,10 @@ The node is accessible under `latent/upscaling/Upscale Latent (SesquiLSR)`. The 
 Some pipelines transform the VAE output before passing it to the diffusion model. An adaptor converts between the pipeline's latent format and the raw VAE latent space that Sesqui operates on. They require no arguments - just pick the one matching your model:
 
 ```python
-from sesqui_lsr import make_identity, make_flux2, make_wan21
+from sesqui_lsr import make_sdxl, make_flux, make_flux2, make_wan21
 
-adaptor = make_identity(4)  # SDXL, Flux, Lumina, Z-Image
+adaptor = make_sdxl()       # SDXL
+adaptor = make_flux()       # Flux, Z-Image
 adaptor = make_flux2()      # Flux2
 adaptor = make_wan21()      # Wan 2.1, Qwen Image, Anima
 
