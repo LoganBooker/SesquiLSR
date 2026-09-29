@@ -1,4 +1,4 @@
-"""Qwen Image 2.1 latent transcoder for theNoise."""
+"""Qwen Image 2.1 decoder-feature latent transcoder for theNoise."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -23,50 +23,44 @@ class RMSNorm2D(nn.Module):
 
 
 class Qwen21SwiGLUStage(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, *, expansion: float = 1.0):
+    def __init__(self, channels: int):
         super().__init__()
-        hidden = max(1, round(out_channels * expansion))
-        self.norm = RMSNorm2D(in_channels)
-        self.input = nn.Conv2d(in_channels, 2 * hidden, 1, bias=False)
-        self.spatial = nn.Conv2d(hidden, hidden, 3, padding=1, groups=hidden, bias=False)
-        self.output = nn.Conv2d(hidden, out_channels, 1, bias=False)
-        self.shortcut = (
-            nn.Conv2d(in_channels, out_channels, 1, bias=False)
-            if in_channels != out_channels else nn.Identity()
+        self.norm = RMSNorm2D(channels)
+        self.input = nn.Conv2d(channels, 2 * channels, 1, bias=False)
+        self.spatial = nn.Conv2d(
+            channels,
+            channels,
+            3,
+            padding=1,
+            padding_mode="reflect",
+            groups=channels,
+            bias=False,
         )
+        self.output = nn.Conv2d(channels, channels, 1, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         value, gate = self.input(F.mish(self.norm(x))).chunk(2, 1)
-        return self.shortcut(x) + self.output(self.spatial(F.mish(value) * gate))
+        value = self.spatial(F.mish(value) * 2.0 * torch.tanh(0.5 * gate))
+        return x + self.output(value)
 
 
 class Qwen21FeatureTranscoder(nn.Module):
-    """The fixed 384-wide 2× bridge paired with the exported weights."""
+    """Translate Qwen decoder-prefix features into a normalized 2× latent."""
 
     def __init__(self):
         super().__init__()
-        feature_channels, latent_channels, width = 1152, 64, 384
-        depth, expansion = 6, 1.0
-        self.head = nn.Conv2d(feature_channels, width, 1)
-        self.in_body = nn.Sequential(*(
-            Qwen21SwiGLUStage(latent_channels if i == 0 else width, width, expansion=expansion)
-            for i in range(depth)
-        ))
-        self.body = nn.Sequential(*(
-            Qwen21SwiGLUStage(width, width, expansion=expansion)
-            for _ in range(depth)
-        ))
-        self.out = nn.Conv2d(width, latent_channels, 3, padding=1)
-        self.skip = nn.Conv2d(latent_channels, latent_channels, 3, padding=1, bias=False)
+        self.head = nn.Conv2d(1152, 384, 1)
+        self.body = nn.Sequential(*(Qwen21SwiGLUStage(384) for _ in range(6)))
+        self.out = nn.Conv2d(384, 64, 3, padding=1, padding_mode="reflect")
+        self.skip = nn.Conv2d(64, 64, 3, padding=1, padding_mode="reflect")
 
     def forward(self, feature: torch.Tensor, latent: torch.Tensor) -> torch.Tensor:
-        size = feature.shape[-2:]
-        if size != (2 * latent.shape[-2], 2 * latent.shape[-1]):
+        size = (2 * latent.shape[-2], 2 * latent.shape[-1])
+        if feature.shape[-2:] != size:
             raise ValueError("decoder-prefix feature must be exactly 2× the latent grid")
-        trunk = F.interpolate(self.in_body(latent), size=size, mode="bicubic", align_corners=False)
-        hidden = self.body(self.head(feature) + trunk)
+        hidden = self.body(self.head(feature))
         skip = F.interpolate(latent, size=size, mode="bicubic", align_corners=False)
-        return self.skip(skip) + self.out(hidden)
+        return self.skip(skip + self.out(hidden))
 
 
 class Qwen21TranscodeUpscaler(LatentUpscaler):
@@ -87,17 +81,16 @@ class Qwen21TranscodeUpscaler(LatentUpscaler):
         z = latents.to(self.device, self.dtype)
         if z.ndim != 4 or z.shape[1] != 64:
             raise ValueError(f"expected [B,64,H,W], got {tuple(z.shape)}")
+
         mean = self.vae._latents_mean.to(self.device, z.dtype)
         inv_std = self.vae._latents_inv_std.to(self.device, z.dtype)
         raw = z / inv_std + mean
+
         feature = self.vae.conv2(raw)
         feature = self.vae.decoder.conv1(feature)
         feature = self.vae.decoder.middle(feature)
         feature = self.vae.decoder.upsamples[0](feature)
-        return self.bridge(
-            feature.to(dtype=self.dtype),
-            z.to(dtype=self.dtype),
-        )
+        return self.bridge(feature.to(self.dtype), z)
 
 
 __all__ = ["Qwen21TranscodeUpscaler"]

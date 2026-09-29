@@ -1,33 +1,34 @@
 # theNoise Qwen Image 2.1 Transcoder Integration
 
-This package replaces theNoise's Qwen Image 2.1 `VAEPixelUpscaler` with a trained
-latent-only 2× bridge.
-
-The bridge accepts and returns theNoise's existing canonical normalized Qwen
-latent. The bundled model code and weights are a matched release pair; changing
-the internals only requires shipping updated code and matching weights.
-
+This package replaces theNoise's Qwen Image 2.1 `VAEPixelUpscaler` with a fixed
+2× decoder-feature latent bridge.
 
 ```text
-[B, 64, H, W] -> [B, 64, 2H, 2W]
+normalized Qwen latent [B, 64, H, W]
+→ existing Qwen VAE decoder prefix
+→ decoder feature [B, 1152, 2H, 2W]
+→ feature-to-latent bridge
+→ normalized Qwen latent [B, 64, 2H, 2W]
 ```
 
-No pipeline, sampler, latent adaptor, or VAE round trip is required.
+No image decode/resize/re-encode round trip, latent adaptor, sampler change, or
+pipeline change is required. The bundled model source and weights are a matched
+release pair.
 
 ## Files
 
 - `qwen21_transcode.py` — native theNoise `LatentUpscaler` implementation.
-- `export_checkpoint.py` — checks that a checkpoint matches the bundled preview model and copies it for handoff.
+- `qwen21_transcode_2x.safetensors` — matching bridge weights.
 
 ## Integration
 
-1. Copy `qwen21_transcode.py` into:
+1. Copy `qwen21_transcode.py` to:
 
    ```text
    thenoise/upscale/qwen21_transcode.py
    ```
 
-2. Copy the final trained bridge file to:
+2. Copy `qwen21_transcode_2x.safetensors` to:
 
    ```text
    thenoise/upscale/weights/qwen21_transcode_2x.safetensors
@@ -46,7 +47,7 @@ No pipeline, sampler, latent adaptor, or VAE round trip is required.
    from thenoise.upscale.qwen21_transcode import Qwen21TranscodeUpscaler
    ```
 
-4. Replace `_create_upscaler()` with:
+4. Add `from pathlib import Path`, then replace `_create_upscaler()` with:
 
    ```python
    def _create_upscaler(self) -> LatentUpscaler:
@@ -59,19 +60,21 @@ No pipeline, sampler, latent adaptor, or VAE round trip is required.
        )
    ```
 
-   Add `from pathlib import Path` to that module.
+The existing `thenoise.upscale` package-data rule includes `weights/**/*`, so no
+packaging configuration change is required.
 
-The existing `thenoise.upscale` package-data rule already includes
-`weights/**/*`, so no packaging configuration change is needed.
+## Release contract
 
-The deployment module does not reconstruct architecture from checkpoint metadata.
-`Qwen21FeatureTranscoder` is authoritative. A later model revision can change that
-private class and ship matching weights without changing `Qwen21TranscodeUpscaler`,
-its constructor, or the pipeline's latent contract.
+`Qwen21FeatureTranscoder` is authoritative. A future model revision can change
+its private internals and ship matching weights without changing
+`Qwen21TranscodeUpscaler`, its constructor, or the external fixed-2× latent
+contract.
+
+The current source expects a 30-tensor feature-only checkpoint. The previous
+54-tensor checkpoint with an LR input trunk is intentionally incompatible.
 
 ## Smoke test
 
-Run a normal Qwen Image 2.1 refined 2× upscale. The output should complete
-without conversion code or pipeline changes. The upscaler receives the same
-normalized 64-channel latent the Qwen DiT uses and returns a normalized 64-channel
-latent at double height and width, ready for the existing refine pass.
+Run a normal Qwen Image 2.1 refined 2× upscale. The result should complete with
+a normalized 64-channel latent at twice the input height and width, ready for
+the existing refinement pass.
