@@ -150,3 +150,11 @@ Total training time and steps varies from model to model; the shortest being 50 
   - `Wan 2.1`: Wan 2.x, Krea 2, Anima, Qwen Image.
 - **scale**: Target scale factor between [1.0, 2.0]. Default `1.5`, step `0.05`.
 - **half_precision**: Default `on`. Loads the upscaler model in bf16 (fp16 if unsupported). Half-precision has no effect on quality and should be left on, however the setting is available for debugging purposes.
+
+## Support
+
+If you get some use out of SesquiLSR and feel like supporting it, donations are welcome!
+
+> **EVM** (Ethereum, Base, BNB Smart Chain) | `0xf7b205ff7a04d0622fc4c5d2ed35aad3460ecd14` | ETH/BNB/USDC/USDT
+>
+> **Solana** | `iLAgTo3Kc9yNeieqJuYKCz8mCwKM9nJc1nZiCAWrj6Y` | SOL/USDC/USDT
