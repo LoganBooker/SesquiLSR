@@ -12,7 +12,7 @@ _node_dir = Path(__file__).resolve().parent
 if str(_node_dir) not in sys.path:
     sys.path.insert(0, str(_node_dir))
 
-from sesqui_lsr import LatentUpscaler, make_flux, make_flux2, make_identity, make_ideogram4, make_sdxl
+from sesqui_lsr import load_upscaler, make_flux, make_flux2, make_identity, make_ideogram4, make_sdxl
 from sesqui_lsr.inference_adaptors import LatentFormatAdaptor
 
 # ── Model / adaptor registry ────────────────────────────────────────────
@@ -53,7 +53,7 @@ _FORMAT_CFG: dict[str, dict] = {
 # typical workflows only use one model family at a time, so we keep exactly
 # one loaded copy and reload on format/dtype changes.
 _active_key: tuple[str, torch.dtype] | None = None
-_active_model: LatentUpscaler | None = None
+_active_model: torch.nn.Module | None = None
 _adaptor_cache: dict[str, LatentFormatAdaptor] = {}
 
 
@@ -148,7 +148,7 @@ def _find_model(filename: str) -> Path:
     )
 
 
-def _load_model(fmt: str, dtype: torch.dtype) -> tuple[LatentUpscaler, LatentFormatAdaptor]:
+def _load_model(fmt: str, dtype: torch.dtype) -> tuple[torch.nn.Module, LatentFormatAdaptor]:
     """Load (or retrieve from cache) the model and adaptor for *fmt*."""
     global _active_key, _active_model
 
@@ -160,9 +160,7 @@ def _load_model(fmt: str, dtype: torch.dtype) -> tuple[LatentUpscaler, LatentFor
         from safetensors.torch import load_file
 
         state_dict = load_file(str(path))
-        model = LatentUpscaler(in_channels=cfg["in_channels"])
-        model.load_state_dict(state_dict)
-        model.to(dtype=dtype).eval().requires_grad_(False)
+        model = load_upscaler(state_dict).to(dtype=dtype)
 
         _active_model = model
         _active_key = key

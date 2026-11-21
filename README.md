@@ -34,12 +34,10 @@ Each model is trained on VAE latents directly. The format adaptors handle any pi
 ```python
 import torch
 from safetensors.torch import load_file
-from sesqui_lsr import LatentUpscaler
+from sesqui_lsr import load_upscaler
 
-model = LatentUpscaler(in_channels=4)
 state_dict = load_file("models/upscaler_SDXL.safetensors")
-model.load_state_dict(state_dict)
-model.eval().requires_grad_(False)
+model = load_upscaler(state_dict)
 
 latent = torch.randn(1, 4, 128, 128)          # SDXL 1024px (8x downsampled latent)
 target_size = (192, 192)                      # upscale to 1536px
@@ -134,7 +132,7 @@ This section provides a general overview of the training methodology; training c
 
 Each model is trained in 1-3 progressive stages, where later stages finetune from the previous stage's weights with different loss configurations and lower learning rates. This approach was inspired by the findings in "[One Small Step in Latent, One Giant Leap for Pixels: Fast Latent Upscale Adapter for Your Diffusion Models](https://arxiv.org/abs/2511.10629)".
 
-All stages use batch size 1, random 512x512 HR crops with log-uniform scale sampling in [1.0, 2.0]. The first stage uses latent and FFT loss, the second latent and multi-band pixel loss, with the third depending on the type of model but usually some combination of pixel loss, 1-2 perceptual losses and DC shift loss (for SDXL to combat hue shift). Luminance-based sharpening is also used on HR targets during the last stage to promote sharper outputs from the upscaler.
+All stages use batch size 1, random 512x512 HR crops with uniform scale sampling in [1.0, 2.0]. The first stage uses latent and FFT loss, the second latent and multi-band pixel loss, with the third depending on the type of model but usually some combination of pixel loss, 1-2 perceptual losses and DC shift loss (for SDXL to combat hue shift). Luminance-based sharpening is also used on HR targets during the last stage to promote sharper outputs from the upscaler.
 
 A modified version of Meta's Schedule-Free AdamW is used as an optimizer.
 

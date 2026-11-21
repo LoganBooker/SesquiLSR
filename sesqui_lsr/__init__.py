@@ -4,6 +4,7 @@ SesquiLSR - Latent Super-Resolution Upscaler.
 Operates on VAE latents at arbitrary scales in [1x, 2x].
 """
 
+from .loader import load_upscaler
 from .inference_adaptors import (
     LatentFormatAdaptor,
     make_flux,
@@ -17,6 +18,7 @@ from .upscaler import LatentUpscaler
 
 __all__ = [
     "LatentUpscaler",
+    "load_upscaler",
     "LatentFormatAdaptor",
     "make_identity",
     "make_sdxl",
